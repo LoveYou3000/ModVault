@@ -84,6 +84,20 @@ class MessagesControllerTest {
     }
 
     @Test
+    void overloadedErrorRendersHttp529() throws Exception {
+        when(service.messages(any(), isNull(), isNull()))
+                .thenThrow(ApiException.overloaded("upstream unreachable or timed out"));
+
+        mvc.perform(post("/v1/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"model\":\"x\",\"max_tokens\":100,"
+                                + "\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}"))
+                .andExpect(status().is(529))
+                .andExpect(jsonPath("$.type").value("error"))
+                .andExpect(jsonPath("$.error.type").value("overloaded_error"));
+    }
+
+    @Test
     void messagesAsStringProducesInvalidRequest() throws Exception {
         mvc.perform(post("/v1/messages")
                         .contentType(MediaType.APPLICATION_JSON)

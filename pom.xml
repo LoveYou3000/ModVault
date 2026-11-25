@@ -104,7 +104,8 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Embedded real PostgreSQL for integration tests (no Docker available in runtime) -->
+        <!-- Embedded real PostgreSQL for integration tests (no Docker available in runtime).
+             Both arch binaries are present so the test runs on arm64 and x86_64. -->
         <dependency>
             <groupId>io.zonky.test</groupId>
             <artifactId>embedded-postgres</artifactId>
@@ -114,6 +115,12 @@
         <dependency>
             <groupId>io.zonky.test.postgres</groupId>
             <artifactId>embedded-postgres-binaries-linux-arm64v8</artifactId>
+            <version>14.10.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.zonky.test.postgres</groupId>
+            <artifactId>embedded-postgres-binaries-linux-amd64</artifactId>
             <version>14.10.1</version>
             <scope>test</scope>
         </dependency>

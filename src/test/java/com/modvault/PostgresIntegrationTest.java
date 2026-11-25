@@ -10,6 +10,7 @@ import com.modvault.dal.mapper.ModelMappingMapper;
 import com.modvault.dal.mapper.UpstreamKeyMapper;
 import com.modvault.dal.mapper.UpstreamMapper;
 import com.modvault.dal.mapper.UsageRecordMapper;
+import com.sun.net.httpserver.HttpServer;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -218,5 +222,76 @@ class PostgresIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         assertFalse(upstreamList.contains("sk-upstream-secret-value"), "plaintext upstream key leaked in list");
         assertTrue(upstreamList.contains("sk-...alue"), "masked upstream key missing");
+    }
+
+    @Test
+    void overloadedErrorReturns529ForConnectionRefusedAndUpstream5xx() throws Exception {
+        // Case 1: upstream connection refused (nothing listening on the port) -> 529 overloaded_error
+        String refusedKey = setupChain("dead-upstream", "http://127.0.0.1:59999/v1", "claude-dead");
+        mvc.perform(post("/v1/messages")
+                        .header("x-api-key", refusedKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"model\":\"claude-dead\",\"max_tokens\":10,"
+                                + "\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}"))
+                .andExpect(status().is(529))
+                .andExpect(jsonPath("$.type").value("error"))
+                .andExpect(jsonPath("$.error.type").value("overloaded_error"))
+                .andExpect(header().exists("request-id"));
+
+        // Case 2: upstream returns HTTP 500 -> 529 overloaded_error
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/v1/chat/completions", exchange -> {
+            byte[] body = "{\"error\":{\"message\":\"boom\"}}".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(500, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        server.start();
+        try {
+            int port = server.getAddress().getPort();
+            String fivexxKey = setupChain("fivexx-upstream", "http://127.0.0.1:" + port + "/v1", "claude-fivexx");
+            mvc.perform(post("/v1/messages")
+                            .header("x-api-key", fivexxKey)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"model\":\"claude-fivexx\",\"max_tokens\":10,"
+                                    + "\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}"))
+                    .andExpect(status().is(529))
+                    .andExpect(jsonPath("$.type").value("error"))
+                    .andExpect(jsonPath("$.error.type").value("overloaded_error"))
+                    .andExpect(header().exists("request-id"));
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    private String setupChain(String upstreamName, String baseUrl, String anthropicModel) throws Exception {
+        String upstreamJson = mvc.perform(post("/admin/api/v1/upstreams")
+                        .header("Authorization", "Bearer " + ADMIN_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"" + upstreamName + "\",\"base_url\":\"" + baseUrl + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String upstreamId = com.modvault.translate.Json.mapper().readTree(upstreamJson).get("id").asText();
+
+        mvc.perform(put("/admin/api/v1/upstreams/{id}/key", upstreamId)
+                        .header("Authorization", "Bearer " + ADMIN_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"key\":\"sk-upstream-secret\"}"))
+                .andExpect(status().isOk());
+
+        mvc.perform(post("/admin/api/v1/model-mappings")
+                        .header("Authorization", "Bearer " + ADMIN_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"anthropic_model\":\"" + anthropicModel + "\",\"upstream_id\":\"" + upstreamId
+                                + "\",\"upstream_model\":\"gpt-4o\"}"))
+                .andExpect(status().isCreated());
+
+        String apiKeyJson = mvc.perform(post("/admin/api/v1/api-keys")
+                        .header("Authorization", "Bearer " + ADMIN_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"" + upstreamName + "-key\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return com.modvault.translate.Json.mapper().readTree(apiKeyJson).get("key").asText();
     }
 }

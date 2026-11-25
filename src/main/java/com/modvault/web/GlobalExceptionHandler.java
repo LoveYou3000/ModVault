@@ -5,7 +5,6 @@ import com.modvault.common.ApiException;
 import com.modvault.translate.model.AnthropicErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -53,6 +52,8 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<AnthropicErrorResponse> build(AnthropicErrorType type, String message) {
         AnthropicErrorResponse body = AnthropicErrorResponse.of(type.wireValue(), message);
-        return ResponseEntity.status(HttpStatus.valueOf(type.httpStatus())).body(body);
+        // Use the int overload: Spring's HttpStatus enum has no 529, so
+        // HttpStatus.valueOf(529) would throw (D5).
+        return ResponseEntity.status(type.httpStatus()).body(body);
     }
 }
