@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: modvault
+      POSTGRES_USER: modvault
+      POSTGRES_PASSWORD: modvault
+    volumes:
+      - modvault-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U modvault"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      MODVAULT_DB_URL: jdbc:postgresql://postgres:5432/modvault
+      MODVAULT_DB_USER: modvault
+      MODVAULT_DB_PASSWORD: modvault
+      MODVAULT_MASTER_KEY: ${MODVAULT_MASTER_KEY}
+      MODVAULT_ADMIN_TOKEN: ${MODVAULT_ADMIN_TOKEN}
+
+volumes:
+  modvault-pg:

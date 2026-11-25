@@ -1,0 +1,53 @@
+server:
+  port: ${MODVAULT_PORT:8080}
+
+spring:
+  application:
+    name: modvault
+  datasource:
+    url: ${MODVAULT_DB_URL:jdbc:postgresql://localhost:5432/modvault}
+    username: ${MODVAULT_DB_USER:modvault}
+    password: ${MODVAULT_DB_PASSWORD:modvault}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 2
+      connection-timeout: 5000
+  flyway:
+    enabled: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+modvault:
+  master-key: ${MODVAULT_MASTER_KEY:}
+  admin-token: ${MODVAULT_ADMIN_TOKEN:}
+  auto-append-v1: ${MODVAULT_AUTO_APPEND_V1:true}
+  default-connect-timeout-ms: ${MODVAULT_DEFAULT_CONNECT_TIMEOUT_MS:10000}
+  default-read-timeout-ms: ${MODVAULT_DEFAULT_READ_TIMEOUT_MS:120000}
+  max-request-body-bytes: ${MODVAULT_MAX_REQUEST_BODY_BYTES:2097152}
+  retention-days: ${MODVAULT_RETENTION_DAYS:90}
+
+mybatis:
+  type-handlers-package: com.modvault.dal.typehandler
+  configuration:
+    map-underscore-to-camel-case: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  metrics:
+    tags:
+      application: modvault
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

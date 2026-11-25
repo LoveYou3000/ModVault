@@ -1,0 +1,10 @@
+target/
+*.class
+*.jar
+.idea/
+*.iml
+.git/
+.gitignore
+*.log
+.env
+README.md
