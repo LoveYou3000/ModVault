@@ -6,6 +6,7 @@ import com.modvault.dal.mapper.UsageRecordMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Usage recording (metadata only) and listing.
@@ -19,7 +20,7 @@ public class UsageService {
         this.mapper = mapper;
     }
 
-    public void record(String requestId, String apiKeyId, String anthropicModel, String upstreamId,
+    public void record(String requestId, UUID apiKeyId, String anthropicModel, UUID upstreamId,
                        String upstreamModel, String status, Integer inputTokens, Integer outputTokens,
                        boolean stream, Long latencyMs, Long firstTokenMs, String errorType) {
         UsageRecord record = new UsageRecord();

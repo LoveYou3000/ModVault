@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @NoArgsConstructor
 public class ModelMappingRequest {
@@ -12,7 +14,7 @@ public class ModelMappingRequest {
     private String anthropicModel;
 
     @JsonProperty("upstream_id")
-    private String upstreamId;
+    private UUID upstreamId;
 
     @JsonProperty("upstream_model")
     private String upstreamModel;

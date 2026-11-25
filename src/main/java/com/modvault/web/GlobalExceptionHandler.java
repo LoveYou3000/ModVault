@@ -11,6 +11,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * Translates exceptions into the Anthropic error body (FR-05). Response bodies never
@@ -36,6 +37,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<AnthropicErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
         return build(AnthropicErrorType.INVALID_REQUEST_ERROR, "method not allowed");
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<AnthropicErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        return build(AnthropicErrorType.INVALID_REQUEST_ERROR,
+                "invalid path parameter: " + e.getName());
     }
 
     @ExceptionHandler(Exception.class)

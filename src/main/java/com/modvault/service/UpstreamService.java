@@ -10,6 +10,7 @@ import com.modvault.dal.mapper.UpstreamMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Upstream and provider-key management, including AES-256-GCM key storage and
@@ -38,7 +39,7 @@ public class UpstreamService {
         return upstream;
     }
 
-    public Upstream findById(String id) {
+    public Upstream findById(UUID id) {
         return mapper.findById(id);
     }
 
@@ -63,7 +64,7 @@ public class UpstreamService {
         }
     }
 
-    public void delete(String id) {
+    public void delete(UUID id) {
         if (mapper.findById(id) == null) {
             throw ApiException.notFound("upstream not found");
         }
@@ -80,11 +81,11 @@ public class UpstreamService {
     /**
      * Idempotently replace the enabled provider key for an upstream (FR-22).
      */
-    public UpstreamKey setKey(String upstreamId, String plaintextKey) {
+    public UpstreamKey setKey(UUID upstreamId, String plaintextKey) {
         if (mapper.findById(upstreamId) == null) {
             throw ApiException.notFound("upstream not found");
         }
-        String keyId = Ids.uuid();
+        UUID keyId = Ids.uuid();
         String aad = EncryptionService.aad(upstreamId, keyId);
         String ciphertext = encryption.encrypt(plaintextKey, aad);
 
@@ -119,7 +120,7 @@ public class UpstreamService {
         }
     }
 
-    public UpstreamKey latestKey(String upstreamId) {
+    public UpstreamKey latestKey(UUID upstreamId) {
         return keyMapper.findLatestByUpstreamId(upstreamId);
     }
 }

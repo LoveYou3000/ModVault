@@ -30,8 +30,8 @@ public final class Ids {
         return "sk-mv-" + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    public static String uuid() {
-        return UUID.randomUUID().toString();
+    public static UUID uuid() {
+        return UUID.randomUUID();
     }
 
     private static String randomHex(int chars) {

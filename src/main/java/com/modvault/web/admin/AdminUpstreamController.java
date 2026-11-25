@@ -2,6 +2,7 @@ package com.modvault.web.admin;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.modvault.common.ApiException;
+import com.modvault.config.ModVaultProperties;
 import com.modvault.dal.entity.Upstream;
 import com.modvault.dal.entity.UpstreamKey;
 import com.modvault.service.UpstreamService;
@@ -24,6 +25,7 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -31,9 +33,11 @@ import java.util.stream.Collectors;
 public class AdminUpstreamController {
 
     private final UpstreamService upstreamService;
+    private final ModVaultProperties props;
 
-    public AdminUpstreamController(UpstreamService upstreamService) {
+    public AdminUpstreamController(UpstreamService upstreamService, ModVaultProperties props) {
         this.upstreamService = upstreamService;
+        this.props = props;
     }
 
     @GetMapping
@@ -47,15 +51,17 @@ public class AdminUpstreamController {
         upstream.setName(req.getName());
         upstream.setBaseUrl(req.getBaseUrl());
         upstream.setEnabled(req.getEnabled() == null || req.getEnabled());
-        upstream.setConnectTimeoutMs(req.getConnectTimeoutMs());
-        upstream.setReadTimeoutMs(req.getReadTimeoutMs());
+        upstream.setConnectTimeoutMs(req.getConnectTimeoutMs() != null
+                ? req.getConnectTimeoutMs() : props.getDefaultConnectTimeoutMs());
+        upstream.setReadTimeoutMs(req.getReadTimeoutMs() != null
+                ? req.getReadTimeoutMs() : props.getDefaultReadTimeoutMs());
         upstream.setExtraHeaders(toJsonString(req.getExtraHeaders()));
         upstream.setMaxTokensField(req.getMaxTokensField() == null ? "max_tokens" : req.getMaxTokensField());
         return ResponseEntity.status(201).body(toResponse(upstreamService.create(upstream)));
     }
 
     @GetMapping("/{id}")
-    public UpstreamResponse get(@PathVariable("id") String id) {
+    public UpstreamResponse get(@PathVariable("id") UUID id) {
         Upstream upstream = upstreamService.findById(id);
         if (upstream == null) {
             throw ApiException.notFound("upstream not found");
@@ -64,7 +70,7 @@ public class AdminUpstreamController {
     }
 
     @PatchMapping("/{id}")
-    public UpstreamResponse update(@PathVariable("id") String id, @RequestBody UpstreamRequest req) {
+    public UpstreamResponse update(@PathVariable("id") UUID id, @RequestBody UpstreamRequest req) {
         Upstream existing = upstreamService.findById(id);
         if (existing == null) {
             throw ApiException.notFound("upstream not found");
@@ -95,13 +101,13 @@ public class AdminUpstreamController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") String id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") UUID id) {
         upstreamService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/key")
-    public Map<String, String> setKey(@PathVariable("id") String id, @RequestBody SetKeyRequest req) {
+    public Map<String, String> setKey(@PathVariable("id") UUID id, @RequestBody SetKeyRequest req) {
         if (req.getKey() == null || req.getKey().trim().isEmpty()) {
             throw ApiException.badRequest("key: field required");
         }
@@ -114,7 +120,7 @@ public class AdminUpstreamController {
     private UpstreamResponse toResponse(Upstream u) {
         UpstreamKey key = upstreamService.latestKey(u.getId());
         return UpstreamResponse.builder()
-                .id(u.getId())
+                .id(u.getId().toString())
                 .name(u.getName())
                 .baseUrl(u.getBaseUrl())
                 .enabled(u.isEnabled())

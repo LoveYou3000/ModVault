@@ -3,6 +3,7 @@ package com.modvault.dal.entity;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 /**
  * An encrypted upstream provider key (single enabled key per upstream, A-10).
@@ -10,9 +11,9 @@ import java.time.OffsetDateTime;
 @Data
 public class UpstreamKey {
 
-    private String id;
+    private UUID id;
 
-    private String upstreamId;
+    private UUID upstreamId;
 
     /** {@code v1:} prefixed AES-256-GCM ciphertext. */
     private String keyCiphertext;

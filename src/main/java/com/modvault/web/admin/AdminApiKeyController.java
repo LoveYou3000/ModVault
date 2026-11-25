@@ -19,6 +19,7 @@ import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -45,7 +46,7 @@ public class AdminApiKeyController {
         ApiKeyService.CreatedKey created = apiKeyService.create(req.getName().trim(), expiresAt);
 
         Map<String, Object> response = new LinkedHashMap<>();
-        response.put("id", created.key().getId());
+        response.put("id", created.key().getId().toString());
         response.put("name", created.key().getName());
         response.put("key", created.plaintext());
         response.put("key_prefix", created.key().getKeyPrefix());
@@ -56,14 +57,14 @@ public class AdminApiKeyController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> revoke(@PathVariable("id") String id) {
+    public ResponseEntity<Void> revoke(@PathVariable("id") UUID id) {
         apiKeyService.revoke(id);
         return ResponseEntity.noContent().build();
     }
 
     private ApiKeyResponse toResponse(ApiKey key) {
         return ApiKeyResponse.builder()
-                .id(key.getId())
+                .id(key.getId().toString())
                 .name(key.getName())
                 .keyPrefix(key.getKeyPrefix())
                 .enabled(key.isEnabled())

@@ -3,6 +3,7 @@ package com.modvault.dal.entity;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 /**
  * An OpenAI-compatible upstream configuration.
@@ -10,7 +11,7 @@ import java.time.OffsetDateTime;
 @Data
 public class Upstream {
 
-    private String id;
+    private UUID id;
 
     private String name;
 

@@ -28,6 +28,7 @@ modvault:
   retention-days: ${MODVAULT_RETENTION_DAYS:90}
 
 mybatis:
+  type-handlers-package: com.modvault.dal.typehandler
   configuration:
     map-underscore-to-camel-case: true
 

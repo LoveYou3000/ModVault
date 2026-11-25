@@ -4,6 +4,7 @@ import com.modvault.dal.entity.ModelMapping;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import java.util.UUID;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -19,7 +20,7 @@ public interface ModelMappingMapper {
     List<ModelMapping> findAll();
 
     @Select("SELECT " + COLUMNS + " FROM model_mappings WHERE id = #{id}")
-    ModelMapping findById(@Param("id") String id);
+    ModelMapping findById(@Param("id") UUID id);
 
     @Select("SELECT " + COLUMNS + " FROM model_mappings WHERE anthropic_model = #{model} AND enabled = TRUE "
             + "ORDER BY created_at DESC LIMIT 1")
@@ -37,5 +38,5 @@ public interface ModelMappingMapper {
     int update(ModelMapping mapping);
 
     @Delete("DELETE FROM model_mappings WHERE id = #{id}")
-    int delete(@Param("id") String id);
+    int delete(@Param("id") UUID id);
 }

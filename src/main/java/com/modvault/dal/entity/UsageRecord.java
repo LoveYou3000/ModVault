@@ -3,6 +3,7 @@ package com.modvault.dal.entity;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 /**
  * One usage record per request (metadata only; no prompt/completion content).
@@ -10,15 +11,15 @@ import java.time.OffsetDateTime;
 @Data
 public class UsageRecord {
 
-    private String id;
+    private UUID id;
 
     private String requestId;
 
-    private String apiKeyId;
+    private UUID apiKeyId;
 
     private String anthropicModel;
 
-    private String upstreamId;
+    private UUID upstreamId;
 
     private String upstreamModel;
 

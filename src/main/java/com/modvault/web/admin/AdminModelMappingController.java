@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -46,13 +47,13 @@ public class AdminModelMappingController {
     }
 
     @PatchMapping("/{id}")
-    public ModelMappingResponse update(@PathVariable("id") String id, @RequestBody ModelMappingRequest req) {
+    public ModelMappingResponse update(@PathVariable("id") UUID id, @RequestBody ModelMappingRequest req) {
         mappingService.update(id, req.getUpstreamId(), req.getUpstreamModel(), req.getEnabled());
         return toResponse(mappingService.findById(id));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") String id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") UUID id) {
         mappingService.delete(id);
         return ResponseEntity.noContent().build();
     }
@@ -60,9 +61,9 @@ public class AdminModelMappingController {
     private ModelMappingResponse toResponse(ModelMapping m) {
         Upstream upstream = upstreamService.findById(m.getUpstreamId());
         return ModelMappingResponse.builder()
-                .id(m.getId())
+                .id(m.getId().toString())
                 .anthropicModel(m.getAnthropicModel())
-                .upstreamId(m.getUpstreamId())
+                .upstreamId(m.getUpstreamId().toString())
                 .upstreamModel(m.getUpstreamModel())
                 .enabled(m.isEnabled())
                 .upstreamName(upstream != null ? upstream.getName() : null)

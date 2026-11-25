@@ -10,6 +10,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Gateway API key lifecycle: create (returns the plaintext once), authenticate, revoke.
@@ -55,7 +56,7 @@ public class ApiKeyService {
         return key;
     }
 
-    public void revoke(String id) {
+    public void revoke(UUID id) {
         mapper.revoke(id);
     }
 
@@ -63,7 +64,7 @@ public class ApiKeyService {
         return mapper.findAll();
     }
 
-    public void touchLastUsed(String id) {
+    public void touchLastUsed(UUID id) {
         mapper.touchLastUsed(id);
     }
 

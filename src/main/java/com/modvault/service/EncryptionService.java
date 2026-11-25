@@ -11,6 +11,7 @@ import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.UUID;
 
 /**
  * AES-256-GCM encryption for upstream provider keys. Ciphertext is {@code v1:} + base64(iv|ct);
@@ -86,7 +87,7 @@ public class EncryptionService {
         }
     }
 
-    public static String aad(String upstreamId, String keyId) {
+    public static String aad(UUID upstreamId, UUID keyId) {
         return upstreamId + ":" + keyId;
     }
 }

@@ -4,6 +4,7 @@ import com.modvault.dal.entity.Upstream;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import java.util.UUID;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -20,7 +21,7 @@ public interface UpstreamMapper {
     List<Upstream> findAll();
 
     @Select("SELECT " + COLUMNS + " FROM upstreams WHERE id = #{id}")
-    Upstream findById(@Param("id") String id);
+    Upstream findById(@Param("id") UUID id);
 
     @Select("SELECT " + COLUMNS + " FROM upstreams WHERE name = #{name}")
     Upstream findByName(@Param("name") String name);
@@ -38,5 +39,5 @@ public interface UpstreamMapper {
     int update(Upstream upstream);
 
     @Delete("DELETE FROM upstreams WHERE id = #{id}")
-    int delete(@Param("id") String id);
+    int delete(@Param("id") UUID id);
 }

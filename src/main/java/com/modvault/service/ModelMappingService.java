@@ -8,6 +8,7 @@ import com.modvault.dal.mapper.UpstreamMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Model-mapping management. At most one enabled mapping per Anthropic model (A-18).
@@ -23,7 +24,7 @@ public class ModelMappingService {
         this.upstreamMapper = upstreamMapper;
     }
 
-    public ModelMapping create(String anthropicModel, String upstreamId, String upstreamModel, boolean enabled) {
+    public ModelMapping create(String anthropicModel, UUID upstreamId, String upstreamModel, boolean enabled) {
         validateModel(anthropicModel);
         if (upstreamMapper.findById(upstreamId) == null) {
             throw ApiException.badRequest("upstream_id: upstream not found");
@@ -48,7 +49,7 @@ public class ModelMappingService {
         return mapper.findEnabledByAnthropicModel(anthropicModel);
     }
 
-    public ModelMapping findById(String id) {
+    public ModelMapping findById(UUID id) {
         return mapper.findById(id);
     }
 
@@ -56,7 +57,7 @@ public class ModelMappingService {
         return mapper.findAll();
     }
 
-    public void update(String id, String upstreamId, String upstreamModel, Boolean enabled) {
+    public void update(UUID id, UUID upstreamId, String upstreamModel, Boolean enabled) {
         ModelMapping existing = mapper.findById(id);
         if (existing == null) {
             throw ApiException.notFound("model mapping not found");
@@ -81,7 +82,7 @@ public class ModelMappingService {
         mapper.update(existing);
     }
 
-    public void delete(String id) {
+    public void delete(UUID id) {
         if (mapper.findById(id) == null) {
             throw ApiException.notFound("model mapping not found");
         }

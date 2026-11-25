@@ -129,6 +129,8 @@ OpenAPI 文档：`/v3/api-docs` 与 `/swagger-ui/index.html`。
 ## 本地构建与测试
 
 ```bash
-mvn test          # 单元测试 + Spring 上下文冒烟测试
+mvn test          # 单元测试 + Spring 上下文冒烟测试 + 真实 PostgreSQL (zonky embedded) 集成测试
 mvn package       # 打包可运行 jar
 ```
+
+集成测试（`PostgresIntegrationTest`）会在本机临时启动一个嵌入式 PostgreSQL，执行 Flyway 迁移并验证五张表的 mapper SQL 与管理面接入链路，无需 Docker。
