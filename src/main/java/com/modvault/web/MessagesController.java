@@ -10,12 +10,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Anthropic-compatible data plane: {@code POST /v1/messages} and
- * {@code POST /v1/messages/count_tokens}.
+ * Anthropic-compatible data plane: {@code POST /v1/messages} (non-streaming + streaming)
+ * and {@code POST /v1/messages/count_tokens}.
  */
 @RestController
 public class MessagesController {
@@ -28,11 +30,15 @@ public class MessagesController {
 
     @PostMapping("/v1/messages")
     public ResponseEntity<AnthropicMessageResponse> messages(@RequestBody AnthropicMessageRequest request,
-                                                             HttpServletRequest http) {
+                                                             HttpServletRequest http,
+                                                             HttpServletResponse response) throws IOException {
         ApiKey apiKey = (ApiKey) http.getAttribute(DataPlaneAuthInterceptor.ATTR_API_KEY);
         String requestId = (String) http.getAttribute(RequestIdFilter.ATTR);
-        AnthropicMessageResponse response = messageService.messages(request, apiKey, requestId);
-        return ResponseEntity.ok(response);
+        if (Boolean.TRUE.equals(request.getStream())) {
+            messageService.streamMessages(request, apiKey, requestId, response);
+            return null;
+        }
+        return ResponseEntity.ok(messageService.messages(request, apiKey, requestId));
     }
 
     @PostMapping("/v1/messages/count_tokens")

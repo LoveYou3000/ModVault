@@ -56,7 +56,7 @@ public class ResponseConverter {
                 .role("assistant")
                 .model(clientModel)
                 .content(blocks)
-                .stopReason(mapFinishReason(choice.getFinishReason(), warnings))
+                .stopReason(FinishReasonMapper.map(choice.getFinishReason(), warnings))
                 .stopSequence(null)
                 .usage(AnthropicUsage.builder().inputTokens(inputTokens).outputTokens(outputTokens).build())
                 .build();
@@ -72,26 +72,5 @@ public class ResponseConverter {
             warnings.add("tool_use input parse failed; using {}");
             return Json.mapper().getNodeFactory().objectNode();
         }
-    }
-
-    private String mapFinishReason(String reason, List<String> warnings) {
-        if (reason == null) {
-            warnings.add("finish_reason null; mapped to end_turn");
-            return "end_turn";
-        }
-        if ("stop".equals(reason)) {
-            return "end_turn";
-        }
-        if ("length".equals(reason)) {
-            return "max_tokens";
-        }
-        if ("tool_calls".equals(reason)) {
-            return "tool_use";
-        }
-        if ("content_filter".equals(reason)) {
-            return "refusal";
-        }
-        warnings.add("unknown finish_reason: " + reason);
-        return "end_turn";
     }
 }

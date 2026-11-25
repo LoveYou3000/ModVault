@@ -8,6 +8,7 @@ import com.modvault.config.ModVaultProperties;
 import com.modvault.dal.entity.Upstream;
 import com.modvault.translate.model.OpenAiChatRequest;
 import com.modvault.translate.model.OpenAiChatResponse;
+import com.modvault.translate.model.OpenAiChunk;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -15,7 +16,11 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -57,7 +62,7 @@ public class OpenAiClient {
                 .url(url)
                 .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
-                .post(RequestBody.create(JSON, body));
+                .post(RequestBody.create(body, JSON));
 
         mergeExtraHeaders(builder, upstream.getExtraHeaders());
 
@@ -83,6 +88,99 @@ public class OpenAiClient {
             }
         } catch (IOException e) {
             throw new UpstreamException("upstream connection failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Opens a streaming upstream call. Throws {@link UpstreamHttpException} on non-2xx and
+     * {@link UpstreamException} on transport failure — both before the caller writes any
+     * SSE response headers.
+     */
+    public StreamingConnection openStream(Upstream upstream, String apiKey, OpenAiChatRequest request) {
+        String url = buildUrl(upstream.getBaseUrl(), props.isAutoAppendV1());
+        String body;
+        try {
+            body = upstreamMapper.writeValueAsString(request);
+        } catch (JsonProcessingException e) {
+            throw new UpstreamException("failed to serialize upstream request", e);
+        }
+
+        Request.Builder builder = new Request.Builder()
+                .url(url)
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .post(RequestBody.create(body, JSON));
+        mergeExtraHeaders(builder, upstream.getExtraHeaders());
+
+        int connectTimeout = upstream.getConnectTimeoutMs() != null
+                ? upstream.getConnectTimeoutMs() : props.getDefaultConnectTimeoutMs();
+        int readTimeout = upstream.getReadTimeoutMs() != null
+                ? upstream.getReadTimeoutMs() : props.getDefaultReadTimeoutMs();
+
+        OkHttpClient client = baseClient.newBuilder()
+                .connectTimeout(connectTimeout, TimeUnit.MILLISECONDS)
+                .readTimeout(readTimeout, TimeUnit.MILLISECONDS)
+                .build();
+
+        try {
+            Response response = client.newCall(builder.build()).execute();
+            if (!response.isSuccessful()) {
+                int code = response.code();
+                String responseBody = response.body() != null ? response.body().string() : "";
+                response.close();
+                throw new UpstreamHttpException(code, responseBody);
+            }
+            return new StreamingConnection(response);
+        } catch (IOException e) {
+            throw new UpstreamException("upstream connection failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Streaming SSE reader over an open upstream response. Yields one parsed chunk per
+     * call; returns {@code null} at {@code data: [DONE]} or EOF.
+     */
+    public static class StreamingConnection implements Closeable {
+
+        private final Response response;
+        private final BufferedReader reader;
+        private final ObjectMapper mapper = new ObjectMapper();
+
+        StreamingConnection(Response response) {
+            this.response = response;
+            this.reader = new BufferedReader(
+                    new InputStreamReader(response.body().byteStream(), StandardCharsets.UTF_8));
+        }
+
+        public OpenAiChunk readNextChunk() {
+            try {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.isEmpty() || !line.startsWith("data:")) {
+                        continue;
+                    }
+                    String data = line.substring("data:".length()).trim();
+                    if (data.isEmpty()) {
+                        continue;
+                    }
+                    if ("[DONE]".equals(data)) {
+                        return null;
+                    }
+                    try {
+                        return mapper.readValue(data, OpenAiChunk.class);
+                    } catch (JsonProcessingException e) {
+                        throw new UpstreamException("failed to parse upstream chunk", e);
+                    }
+                }
+                return null;
+            } catch (IOException e) {
+                throw new UpstreamException("upstream stream failed: " + e.getMessage(), e);
+            }
+        }
+
+        @Override
+        public void close() {
+            response.close();
         }
     }
 

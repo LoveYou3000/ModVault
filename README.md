@@ -116,8 +116,9 @@ OpenAPI 文档：`/v3/api-docs` 与 `/swagger-ui/index.html`。
 
 ## 当前里程碑状态
 
-- **M1 骨架与直通（本仓库已实现）**：工程骨架、Flyway 迁移、上游/上游密钥（AES-256-GCM + 掩码）、模型映射、网关 Key、`POST /v1/messages` 非流式文本 + 工具调用转换、`count_tokens` 本地估算、健康检查、Prometheus 指标、JSON 结构化日志、用量记录。
-- **M2 流式与工具 / M3 收口（未实现）**：SSE 事件转换、流式错误归一、有限重试、断开释放、压测。当前 `stream=true` 返回 `400 invalid_request_error`。
+- **M1 骨架与直通（已实现）**：工程骨架、Flyway 迁移、上游/上游密钥（AES-256-GCM + 掩码）、模型映射、网关 Key、`POST /v1/messages` 非流式文本 + 工具调用转换、`count_tokens` 本地估算、健康检查、Prometheus 指标、JSON 结构化日志、用量记录。
+- **M2 流式与工具（已实现核心）**：`stream=true` 的 SSE 事件转换（`message_start` / `content_block_start` / `content_block_delta` / `content_block_stop` / `message_delta` / `message_stop`）、工具调用增量（`input_json_delta`）、流中错误归一（`event: error`）、客户端断开释放。有限重试（FR-19）与优雅停机（FR-28）尚未实现。
+- **M3 收口（部分）**：Dockerfile / docker compose / README / OpenAPI 已就绪；NFR-01/02/03 压测报告未做。
 
 ## 密钥安全
 
